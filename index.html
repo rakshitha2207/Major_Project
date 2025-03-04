@@ -247,6 +247,8 @@
         const status = document.getElementById('status');
         const webcamPreview = document.getElementById('webcam-preview');
         let isListening = false;
+        let isWebcamActive = false;
+        let webcamStream = null;
         let ws;
 
         // WebSocket Connection
@@ -256,7 +258,7 @@
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 addMessage(data.role, data.content, data.image);
-                status.textContent = 'Say "nova", type, or capture to start...';
+                status.textContent = 'Say "prometheus", type, or capture to start...';
                 chatArea.scrollTop = chatArea.scrollHeight;
             };
             ws.onclose = () => {
@@ -284,13 +286,13 @@
             recognition.onend = () => {
                 isListening = false;
                 voiceBtn.classList.remove('listening');
-                status.textContent = 'Say "nova", type, or capture to start...';
+                status.textContent = 'Say "prometheus", type, or capture to start...';
             };
 
             recognition.onresult = (event) => {
                 const transcript = event.results[event.results.length - 1][0].transcript.trim();
                 console.log('Speech result:', transcript);
-                if (transcript.toLowerCase().startsWith('nova')) {
+                if (transcript.toLowerCase().startsWith('prometheus')) {
                     const prompt = transcript.slice(4).trim().replace(/^,+/, '');
                     if (prompt && ws.readyState === WebSocket.OPEN) {
                         addMessage('user', prompt);
@@ -316,38 +318,42 @@
 
         // Webcam Capture
         webcamBtn.addEventListener('click', () => {
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(stream => {
-                    webcamBtn.classList.add('capturing');
-                    webcamPreview.srcObject = stream;
-                    webcamPreview.style.display = 'block';
-                    status.textContent = 'Capturing... Click again to take photo';
+            if (!isWebcamActive) {
+                // Start webcam preview
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => {
+                        isWebcamActive = true;
+                        webcamStream = stream;
+                        webcamBtn.classList.add('capturing');
+                        webcamPreview.srcObject = stream;
+                        webcamPreview.style.display = 'block';
+                        status.textContent = 'Previewing... Click again to capture';
+                    })
+                    .catch(err => {
+                        console.error('Webcam error:', err);
+                        status.textContent = 'Failed to access webcam.';
+                    });
+            } else {
+                // Capture and stop preview
+                const canvas = document.createElement('canvas');
+                canvas.width = webcamPreview.videoWidth;
+                canvas.height = webcamPreview.videoHeight;
+                canvas.getContext('2d').drawImage(webcamPreview, 0, 0);
+                const imageData = canvas.toDataURL('image/jpeg').split(',')[1]; // Base64 data
+                
+                // Stop the webcam stream
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamPreview.style.display = 'none';
+                webcamBtn.classList.remove('capturing');
+                isWebcamActive = false;
 
-                    const captureHandler = () => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = webcamPreview.videoWidth;
-                        canvas.height = webcamPreview.videoHeight;
-                        canvas.getContext('2d').drawImage(webcamPreview, 0, 0);
-                        const imageData = canvas.toDataURL('image/jpeg').split(',')[1]; // Base64 data
-                        stream.getTracks().forEach(track => track.stop());
-                        webcamPreview.style.display = 'none';
-                        webcamBtn.classList.remove('capturing');
-                        webcamBtn.removeEventListener('click', captureHandler);
-
-                        const prompt = textInput.value.trim() || "Describe this image";
-                        if (ws.readyState === WebSocket.OPEN) {
-                            addMessage('user', prompt);
-                            status.textContent = 'Processing...';
-                            ws.send(JSON.stringify({ prompt, isTextInput: false, webcamImage: imageData }));
-                        }
-                    };
-
-                    webcamBtn.addEventListener('click', captureHandler, { once: true });
-                })
-                .catch(err => {
-                    console.error('Webcam error:', err);
-                    status.textContent = 'Failed to access webcam.';
-                });
+                const prompt = textInput.value.trim() || "Describe this image";
+                if (ws.readyState === WebSocket.OPEN) {
+                    addMessage('user', prompt);
+                    status.textContent = 'Processing...';
+                    ws.send(JSON.stringify({ prompt, isTextInput: false, webcamImage: imageData }));
+                }
+            }
         });
 
         // Text Input Handling
