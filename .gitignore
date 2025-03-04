@@ -1,0 +1,6 @@
+.env
+venv/
+chromaa/
+
+// all text files
+*.txt
