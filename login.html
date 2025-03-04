@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prometheus - Login</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(120deg, #0f2027, #203a43, #2c5364);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header img {
+            width: 150px;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            color: #00e6ff;
+            text-shadow: 0 0 10px rgba(0, 230, 255, 0.7);
+        }
+
+        .form-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-toggle button {
+            background: none;
+            border: none;
+            color: #b0bec5;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: color 0.3s ease;
+        }
+
+        .form-toggle button.active {
+            color: #00e6ff;
+            border-bottom: 2px solid #00e6ff;
+        }
+
+        .form-toggle button:hover {
+            color: #00e6ff;
+        }
+
+        .form {
+            display: none;
+        }
+
+        .form.active {
+            display: block;
+        }
+
+        .form input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border: 1px solid #00e6ff;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .form input:focus {
+            outline: none;
+            border-color: #ff3366;
+        }
+
+        .form button {
+            width: 100%;
+            padding: 12px;
+            background: #ff3366;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .form button:hover {
+            background: #e02e5b;
+            transform: scale(1.05);
+        }
+
+        #status {
+            text-align: center;
+            margin-top: 15px;
+            color: #b0bec5;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: 90%;
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .form-toggle button {
+                font-size: 1em;
+            }
+
+            .form input, .form button {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="prometheus.png" alt="Prometheus Logo">
+            <h1>Prometheus</h1>
+        </div>
+        <div class="form-toggle">
+            <button id="signin-tab" class="active">Sign In</button>
+            <button id="signup-tab">Sign Up</button>
+        </div>
+        <form id="signin-form" class="form active">
+            <input type="text" id="signin-username" placeholder="Username" required>
+            <input type="password" id="signin-password" placeholder="Password" required>
+            <button type="submit">Sign In</button>
+        </form>
+        <form id="signup-form" class="form">
+            <input type="text" id="signup-username" placeholder="Username" required>
+            <input type="password" id="signup-password" placeholder="Password" required>
+            <button type="submit">Sign Up</button>
+        </form>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const signinTab = document.getElementById('signin-tab');
+        const signupTab = document.getElementById('signup-tab');
+        const signinForm = document.getElementById('signin-form');
+        const signupForm = document.getElementById('signup-form');
+        const status = document.getElementById('status');
+
+        // Toggle between sign-in and sign-up
+        signinTab.addEventListener('click', () => {
+            signinTab.classList.add('active');
+            signupTab.classList.remove('active');
+            signinForm.classList.add('active');
+            signupForm.classList.remove('active');
+            status.textContent = '';
+        });
+
+        signupTab.addEventListener('click', () => {
+            signupTab.classList.add('active');
+            signinTab.classList.remove('active');
+            signupForm.classList.add('active');
+            signinForm.classList.remove('active');
+            status.textContent = '';
+        });
+
+        // Sign-up form submission
+        signupForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('signup-username').value.trim();
+            const password = document.getElementById('signup-password').value.trim();
+            
+            if (localStorage.getItem(username)) {
+                status.textContent = 'Username already exists!';
+                status.style.color = '#ff3366';
+            } else {
+                localStorage.setItem(username, password);
+                status.textContent = 'Sign-up successful! Please sign in.';
+                status.style.color = '#00e6ff';
+                signupForm.reset();
+                signinTab.click(); // Switch to sign-in
+            }
+        });
+
+        // Sign-in form submission
+        signinForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('signin-username').value.trim();
+            const password = document.getElementById('signin-password').value.trim();
+            const storedPassword = localStorage.getItem(username);
+
+            if (storedPassword && storedPassword === password) {
+                localStorage.setItem('loggedIn', 'true');
+                localStorage.setItem('currentUser', username);
+                window.location.href = 'index.html';
+            } else {
+                status.textContent = 'Invalid username or password!';
+                status.style.color = '#ff3366';
+            }
+        });
+
+        // Redirect if already logged in
+        if (localStorage.getItem('loggedIn') === 'true') {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
